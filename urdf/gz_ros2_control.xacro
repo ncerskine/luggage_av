@@ -35,22 +35,22 @@
         </plugin>
     </gazebo>
 
-    <gazebo refrence="caster_wheel_FL">
+    <gazebo reference="caster_wheel_FL">
         <mu value="0.001" />
         <mu2 value="0.001" />
     </gazebo>
 
-    <gazebo refrence="caster_wheel_FR">
+    <gazebo reference="caster_wheel_FR">
         <mu value="0.001" />
         <mu2 value="0.001" />
     </gazebo>
 
-    <gazebo refrence="caster_wheel_RL">
+    <gazebo reference="caster_wheel_RL">
         <mu value="0.001" />
         <mu2 value="0.001" />
     </gazebo>
 
-    <gazebo refrence="caster_wheel_RR">
+    <gazebo reference="caster_wheel_RR">
         <mu value="0.001" />
         <mu2 value="0.001" />
     </gazebo>
