@@ -5,6 +5,8 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.actions import IncludeLaunchDescription
 from launch.actions import RegisterEventHandler
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 
@@ -13,18 +15,27 @@ os.environ["QT_QPA_PLATFORM"]="xcb"
 
 def generate_launch_description():
 
+    
+
     pkg_share = get_package_share_directory("luggage_av")
     #lidar_share = get_package_share_directory("sllidar_ros2")
 
-    bridge_params = os.path.join(pkg_share,'parameters','gz_bridge.yaml')
+    default_world = os.path.join(pkg_share,'worlds','obstacles.world')    
+    
+    world = LaunchConfiguration('world')
+
+    world_arg = DeclareLaunchArgument(
+        'world',
+        default_value=default_world,
+        description='World to load'
+        )
+
     ros_gz_bridge = Node(
         package="ros_gz_bridge",
         executable="parameter_bridge",
-        arguments=[
-            '--ros-args',
-            '-p',
-            f'config_file:={bridge_params}',
-        ]
+        parameters=[
+            {"config_file": os.path.join(pkg_share,'parameters','gz_bridge.yaml')},  
+        ],
     )
     
     gz_spawn_entity = Node(
@@ -67,9 +78,15 @@ def generate_launch_description():
 
     rviz = IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
-                os.path.join(pkg_share, "launch", "rviz_laser.launch.py")
+                os.path.join(pkg_share, "launch", "rviz.launch.py")
             ])
     )
+
+    # gazebo = IncludeLaunchDescription(
+    #             PythonLaunchDescriptionSource([os.path.join(
+    #                 get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')]),
+    #                 launch_arguments={'gz_args': ['-r -v4 ', world]}.items()
+    #          )
 
     return LaunchDescription([
         IncludeLaunchDescription(
@@ -77,29 +94,30 @@ def generate_launch_description():
                 os.path.join(pkg_share, "launch", "robot_state_publisher.launch.py")
             ]),launch_arguments={'use_sim_time': 'true'}.items()
         ),
-        # RegisterEventHandler(
-        #     event_handler=OnProcessExit(
-        #         target_action=gz_spawn_entity,
-        #         on_exit=[joint_state_broadcaster_spawner],
-        #     )
-        # ),
-        # RegisterEventHandler(
-        #     event_handler=OnProcessExit(
-        #         target_action=joint_state_broadcaster_spawner,
-        #         on_exit=[diff_drive_controller_spawner],
-        #     )
-        # ),
+        RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=gz_spawn_entity,
+                on_exit=[joint_state_broadcaster_spawner],
+            )
+        ),
+        RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=joint_state_broadcaster_spawner,
+                on_exit=[diff_drive_controller_spawner],
+            )
+        ),
+        world_arg,
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
                 os.path.join(get_package_share_directory("ros_gz_sim"), "launch", "gz_sim.launch.py")
             ]),
-            launch_arguments={'gz_args': ['-r -v4 ',os.path.join(pkg_share, 'worlds', 'obstacles.world') ]}.items(),
+            launch_arguments={'gz_args': ['-r -v4 ',world ]}.items(),
             
         ),
         gz_spawn_entity,
         ros_gz_bridge,
-        diff_drive_controller_spawner,
-        joint_state_broadcaster_spawner,
         rviz,
         #sllidar,
+
+        
     ])
